@@ -1,0 +1,7 @@
+[package]
+name = "guildsim"
+version = "0.1.0"
+authors = ["Drakeor <drakeor.dragon@gmail.com>"]
+
+[dependencies]
+rand = "0.5"
