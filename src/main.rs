@@ -5,12 +5,22 @@ use rand::Rng;
 
 const MAXHEALTH : i32 = 100;
 
+// Careers a player can have
+#[derive(Debug)]
 enum Career {
     Politician,
     Soldier,
     Craftsman
 }
 
+// Represents an office position
+struct Office {
+    name: String,
+    level: i32,
+    salary: i32
+}
+
+// Represents a player in the guild
 struct Player {
     health: i32,
     money : i32,
@@ -20,6 +30,7 @@ struct Player {
     combat_level : i32
 }
 
+// Generates a random player
 fn GeneratePlayer() -> Player {
 
     let career = match rand::thread_rng().gen_range(0_i32, 3_i32) {
@@ -40,17 +51,19 @@ fn GeneratePlayer() -> Player {
     player
 }
 
+// Entry point
 fn main() {
     
     let mut players = Vec::new();
     let mut is_running = true;
 
-    for _ in 1..8 {
+    for _ in 0..8 {
         players.push(GeneratePlayer());
     }
 
     while is_running {
 
+        println!("");
         println!("Options");
         println!("1 - Work at Factory");
         println!("2 - Develop Factory");
@@ -67,8 +80,19 @@ fn main() {
             "1" => {
                 println!("Werk");
             }
+
+            "7" => {
+                println!("Stats");
+                for i in 0..8 {
+                    println!("Player {}: ${} | {} HP | {} Combat | {} Skill | {} Develop | {:?}", i, 
+                        players[i].money, players[i].health, 
+                        players[i].combat_level, players[i].skill_level, players[i].develop_level, players[i].disposition);
+                }
+            }
+
             _ => {
-                println!("Invalid option: {}", input);
+                println!("Invalid option or not implemented yet: {}", input);
+                continue;
             }
         }
 
