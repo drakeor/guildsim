@@ -6,6 +6,7 @@ use std::collections::VecDeque;
 
 const MAXHEALTH : i32 = 100;
 const ACTIONS_PER_TURN : usize = 5;
+const BASE_INCOME: i32 = 10;
 
 // Careers a player can have
 #[derive(Debug)]
@@ -68,6 +69,11 @@ fn GeneratePlayer() -> Player {
     player
 }
 
+// How much money is earned from working
+fn calc_work(player: &Player) -> i32 {
+    BASE_INCOME + ((player.develop_level + 1_i32) / 2_i32) * (player.skill_level / 5_i32) 
+}
+
 // Entry point
 fn main() {
     
@@ -85,7 +91,7 @@ fn main() {
         // Print menu
         println!("");
         println!("Options");
-        println!("1 - Work at Factory");
+        println!("1 - Work at Factory (${})", calc_work(&players[0]));
         println!("2 - Develop Factory");
         println!("3 - Socialize with Player");
         println!("4 - Attack Player");
@@ -125,11 +131,16 @@ fn main() {
         }
 
         // Process actions
+        // Player 0 is us
+        let c_player = 0; 
         while !taskBuf.is_empty() {
             let elem = taskBuf.pop_back().unwrap();
             match elem.turn_task {
                 TurnTask::Work => {
-                    println!("Working..");
+                    let income = calc_work(&players[c_player]);
+                    players[c_player].money += income
+                    players[c_player].skill_level += 1;
+                    println!("Player {} works, earning {} income.", c_player, income);
                 }
                 _ => {
                     println!("Failed to process unknown action {:?}", elem.turn_task);
