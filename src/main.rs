@@ -25,6 +25,11 @@ enum TurnTask {
     Office
 }
 
+struct TurnAction {
+    turn_task : TurnTask,
+    target : i32
+}
+
 // Represents an office position
 struct Office {
     name: String,
@@ -98,9 +103,13 @@ fn main() {
 
             // Process input 
             match input.trim() {
-                "1" => taskBuf.push_front(TurnTask::Work),
-
-                "8" => {
+                "1" => taskBuf.push_front(TurnAction { turn_task: TurnTask::Work, target: 0 } ),
+                "2" => taskBuf.push_front(TurnAction { turn_task: TurnTask::Develop, target: 0 } ),
+                "3" => taskBuf.push_front(TurnAction { turn_task: TurnTask::Socialize, target: 0 } ),
+                "4" => taskBuf.push_front(TurnAction { turn_task: TurnTask::Attack, target: 0 } ),
+                "5" => taskBuf.push_front(TurnAction { turn_task: TurnTask::Train, target: 0 } ),
+                "6" => taskBuf.push_front(TurnAction { turn_task: TurnTask::Office, target: 0 } ),
+                "7" => {
                     println!("Stats");
                     for i in 0..8 {
                         println!("Player {}: ${} | {} HP | {} Combat | {} Skill | {} Develop | {:?}", i, 
@@ -116,8 +125,17 @@ fn main() {
         }
 
         // Process actions
-        
-        
+        while !taskBuf.is_empty() {
+            let elem = taskBuf.pop_back().unwrap();
+            match elem.turn_task {
+                TurnTask::Work => {
+                    println!("Working..");
+                }
+                _ => {
+                    println!("Failed to process unknown action {:?}", elem.turn_task);
+                }
+            }
+        }
 
 
     }
