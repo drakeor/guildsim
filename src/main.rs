@@ -2,8 +2,10 @@ extern crate rand;
 
 use std::io;
 use rand::Rng;
+use std::collections::VecDeque;
 
 const MAXHEALTH : i32 = 100;
+const ACTIONS_PER_TURN : usize = 5;
 
 // Careers a player can have
 #[derive(Debug)]
@@ -11,6 +13,16 @@ enum Career {
     Politician,
     Soldier,
     Craftsman
+}
+
+#[derive(Debug)]
+enum TurnTask {
+    Work,
+    Develop,
+    Socialize,
+    Attack,
+    Train,
+    Office
 }
 
 // Represents an office position
@@ -63,6 +75,9 @@ fn main() {
 
     while is_running {
 
+        let mut taskBuf = VecDeque::new();
+
+        // Print menu
         println!("");
         println!("Options");
         println!("1 - Work at Factory");
@@ -73,28 +88,36 @@ fn main() {
         println!("6 - Run for Office");
         println!("7 - Stats");
 
-        let mut input = String::new();
-        io::stdin().read_line(&mut input);
+        // Queue up actions
+        while taskBuf.len() < ACTIONS_PER_TURN {
 
-        match input.trim() {
-            "1" => {
-                println!("Werk");
-            }
+            // Get input
+            println!("Action {} / {}", taskBuf.len(), ACTIONS_PER_TURN);
+            let mut input = String::new();
+            io::stdin().read_line(&mut input);
 
-            "7" => {
-                println!("Stats");
-                for i in 0..8 {
-                    println!("Player {}: ${} | {} HP | {} Combat | {} Skill | {} Develop | {:?}", i, 
-                        players[i].money, players[i].health, 
-                        players[i].combat_level, players[i].skill_level, players[i].develop_level, players[i].disposition);
+            // Process input 
+            match input.trim() {
+                "1" => taskBuf.push_front(TurnTask::Work),
+
+                "8" => {
+                    println!("Stats");
+                    for i in 0..8 {
+                        println!("Player {}: ${} | {} HP | {} Combat | {} Skill | {} Develop | {:?}", i, 
+                            players[i].money, players[i].health, 
+                            players[i].combat_level, players[i].skill_level, players[i].develop_level, players[i].disposition);
+                    }
+                }
+
+                _ => {
+                    println!("Invalid option or not implemented yet: {}", input);
                 }
             }
-
-            _ => {
-                println!("Invalid option or not implemented yet: {}", input);
-                continue;
-            }
         }
+
+        // Process actions
+        
+        
 
 
     }
