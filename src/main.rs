@@ -9,6 +9,7 @@ const ACTIONS_PER_TURN: usize = 5;
 const BASE_INCOME: i32 = 10;
 const BASE_DEVELOPMENT_COST: i32 = 100;
 const BASE_DEVELOPMENT_INCREMENT: f32 = 1.5;
+const BASE_ATTACK: i32 = 3;
 
 // Careers a player can have
 #[derive(Debug)]
@@ -36,7 +37,7 @@ enum AIType {
 
 struct TurnAction {
     turn_task: TurnTask,
-    target: i32,
+    target: usize,
 }
 
 // Represents an office position
@@ -115,10 +116,35 @@ fn calc_develop(player: &Player) -> i32 {
     (BASE_DEVELOPMENT_COST as f32 * BASE_DEVELOPMENT_INCREMENT.powi(player.develop_level)) as i32
 }
 
+// Calculate attack power
+fn calc_attack(player: &Player) -> i32 {
+    let mut a = BASE_ATTACK + (player.combat_level / 3);
+    a = match player.disposition {
+        Career::Politician => (a as f32 * 0.95_f32) as i32,
+        Career::Soldier => (a as f32 * 1.05_f32) as i32,
+        _ => a,
+    };
+    a
+}
+
 // Player Function
 // Player controls this person
 fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
     let mut taskBuf = VecDeque::new();
+
+    // Print menu
+    println!("");
+    println!("Options (Bank: ${})", players[c_player].money);
+    println!("1 - Produce Goods (+${})", calc_work(&players[c_player]));
+    println!(
+        "2 - Develop Guild (-${}, +Development)",
+        calc_develop(&players[c_player])
+    );
+    println!("3 - Socialize with Player");
+    println!("4 - Attack Player ({} damage)", calc_attack(&players[c_player]));
+    println!("5 - Train");
+    println!("6 - Run for Office");
+    println!("7 - Stats");
 
     // Queue up actions
     while taskBuf.len() < ACTIONS_PER_TURN {
@@ -141,6 +167,31 @@ fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
                 taskBuf.push_front(TurnAction {
                     turn_task: TurnTask::Develop,
                     target: 0,
+                });
+            },
+            "4" => {
+                println!("Type in which player to attack");
+                let mut input_text = String::new();
+                io::stdin()
+                    .read_line(&mut input_text)
+                    .expect("failed to read from stdin");
+
+                let trimmed = input_text.trim();
+                let ctarget = match trimmed.parse::<i32>() {
+                    Ok(i) => i,
+                    Err(..) => -1,
+                };
+                if ctarget == c_player as i32 {
+                    println!("You cannot attack yourself!");
+                    continue;
+                }
+                if ctarget < 0 || ctarget > players.len() as i32 {
+                    println!("Target player ID is out of bounds!");
+                    continue;
+                }
+                taskBuf.push_front(TurnAction {
+                    turn_task: TurnTask::Attack,
+                    target: ctarget as usize,
                 });
             }
             "7" => {
@@ -204,23 +255,17 @@ fn main() {
 
     while is_running {
         let mut taskBuf : VecDeque<TurnAction> = VecDeque::new();
-
-        // Print menu
-        println!("");
-        println!("Options (Bank: ${})", players[0].money);
-        println!("1 - Produce Goods (+${})", calc_work(&players[0]));
-        println!(
-            "2 - Develop Guild (-${}, +Development)",
-            calc_develop(&players[0])
-        );
-        println!("3 - Socialize with Player");
-        println!("4 - Attack Player");
-        println!("5 - Train");
-        println!("6 - Run for Office");
-        println!("7 - Stats");
+        println!("Press enter to begin next turn");
+        let mut input = String::new();
+        io::stdin().read_line(&mut input);
 
         // Process actions
         for c_player in 0..players.len() {
+            // If the player is dead, do nothing
+            if players[c_player].health <= 0 {
+                continue;
+            }
+
             // Run AI or player turn task to get actions
             let mut taskBuf = (players[c_player].turn_func)(c_player, &players);
 
@@ -249,6 +294,29 @@ fn main() {
                             c_player, players[c_player].develop_level, players[c_player].money
                         );
                     }
+                    // Attack another player
+                    TurnTask::Attack => {
+                        let damage = calc_attack(&players[c_player]);
+                        if players[elem.target].health < -100 {
+                            players[elem.target].health -= damage;
+                            println!("Player {} INSISTS on STILL beating player {} to a pulp EVEN THOUGH THERE'S NOTHING LEFT OF THEM TO ATTACK. ", c_player, elem.target);
+                        } else if players[elem.target].health < -50 {
+                            players[elem.target].health -= damage;
+                            println!("Player {} STILL CONTINUES to attack for player {}'s dead body for {} damage. ", c_player, elem.target, damage);
+                        } else if players[elem.target].health < -20 {
+                            players[elem.target].health -= damage;
+                            println!("Player {} continues attacking player {}'s dead body for {} damage. ", c_player, elem.target, damage);
+                        } else if players[elem.target].health <= 0 {
+                            println!("Player {} attack player {}'s lifeless corpse for {} damage. ", c_player, elem.target, damage);
+                        } else {
+                            players[elem.target].health -= damage;
+                            println!("Player {} attacks player {} for {} damage. HP Left: {}", c_player, elem.target, damage, players[elem.target].health);
+                            if players[elem.target].health <= 0 {
+                                println!("Player {} dies.", elem.target);
+                            }
+                        }
+                    }
+                    // Default is to fail
                     _ => {
                         println!("Failed to process unknown action {:?}", elem.turn_task);
                     }
