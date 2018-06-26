@@ -145,7 +145,7 @@ fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
             }
             "7" => {
                 println!("Stats");
-                for i in 0..8 {
+                for i in 0..players.len() {
                     println!(
                         "Player {}: ${} | {} HP | {} Combat | {} Skill | {} Develop | {:?} | {:?}",
                         i,
@@ -170,11 +170,11 @@ fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
 }
 
 // AI Function
+// This AI is stupid and works all day
 // Selects actions for that player's turn
 fn do_ai_basic(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
     let mut taskBuf = VecDeque::new();
     while taskBuf.len() < ACTIONS_PER_TURN {
-        // This AI is stupid and works all day
         taskBuf.push_back(TurnAction {
             turn_task: TurnTask::Work,
             target: 0,
@@ -189,9 +189,13 @@ fn main() {
     let mut is_running = true;
 
     players.push(GeneratePlayer(AIType::Player));
-    for _ in 1..8 {
-        players.push(GeneratePlayer(AIType::BasicWorkAI));
-    }
+    players.push(GeneratePlayer(AIType::BasicWorkAI));
+    players.push(GeneratePlayer(AIType::BasicWorkAI));
+    players.push(GeneratePlayer(AIType::BasicWorkAI));
+    players.push(GeneratePlayer(AIType::BasicWorkAI));
+    players.push(GeneratePlayer(AIType::BasicWorkAI));
+    players.push(GeneratePlayer(AIType::BasicWorkAI));
+    players.push(GeneratePlayer(AIType::BasicWorkAI));
 
     println!("");
     println!("Guild Sim");
@@ -216,7 +220,7 @@ fn main() {
         println!("7 - Stats");
 
         // Process actions
-        for c_player in 0..8 {
+        for c_player in 0..players.len() {
             // Run AI or player turn task to get actions
             let mut taskBuf = (players[c_player].turn_func)(c_player, &players);
 
