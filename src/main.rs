@@ -6,10 +6,12 @@ use std::collections::VecDeque;
 
 const MAXHEALTH: i32 = 100;
 const ACTIONS_PER_TURN: usize = 5;
-const BASE_INCOME: i32 = 10;
+const BASE_INCOME: i32 = 5;
 const BASE_DEVELOPMENT_COST: i32 = 100;
 const BASE_DEVELOPMENT_INCREMENT: f32 = 1.5;
 const BASE_ATTACK: i32 = 3;
+const BASE_TRAINING_COST: i32 = 25;
+const BASE_TRAINING_INCREMENT: f32 = 1.1;
 
 // Careers a player can have
 #[derive(Debug)]
@@ -69,7 +71,8 @@ fn GeneratePlayer(ai_type: AIType) -> Player {
 
     let player = Player {
         health: MAXHEALTH,
-        money: (200 + rand::thread_rng().gen_range(0_i32, 801_i32) as i32),
+        //money: (250 + rand::thread_rng().gen_range(0_i32, 801_i32) as i32),
+        money: 250,
         skill_level: 1,
         develop_level: 1,
         disposition: career,
@@ -127,6 +130,11 @@ fn calc_attack(player: &Player) -> i32 {
     a
 }
 
+// Calculate training cost
+fn calc_training(player: &Player) -> i32 {
+    (BASE_TRAINING_COST as f32 * BASE_TRAINING_INCREMENT.powi(player.combat_level)) as i32
+}
+
 // Player Function
 // Player controls this person
 fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
@@ -142,7 +150,7 @@ fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
     );
     println!("3 - Socialize with Player");
     println!("4 - Attack Player ({} damage)", calc_attack(&players[c_player]));
-    println!("5 - Train");
+    println!("5 - Train (-${}, +Attack)", calc_training(&players[c_player]));
     println!("6 - Run for Office");
     println!("7 - Stats");
 
@@ -160,10 +168,10 @@ fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
                 target: 0,
             }),
             "2" => {
-                if action_exists(TurnTask::Develop, &taskBuf) {
+                /*if action_exists(TurnTask::Develop, &taskBuf) {
                     println!("Cannot develop more than once per turn!");
                     continue;
-                }
+                }*/
                 taskBuf.push_front(TurnAction {
                     turn_task: TurnTask::Develop,
                     target: 0,
@@ -192,6 +200,12 @@ fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
                 taskBuf.push_front(TurnAction {
                     turn_task: TurnTask::Attack,
                     target: ctarget as usize,
+                });
+            }
+            "5" => {
+                taskBuf.push_front(TurnAction {
+                    turn_task: TurnTask::Train,
+                    target: 0,
                 });
             }
             "7" => {
@@ -282,6 +296,10 @@ fn main() {
                     }
                     // Develops the guild the player owns
                     TurnTask::Develop => {
+                        /*if action_exists(TurnTask::Develop, &taskBuf) {
+                            println!("Player {} cannot develop more than once per turn!", c_player);
+                            continue;
+                        }*/
                         let cost = calc_develop(&players[c_player]);
                         if !can_afford(players[c_player].money, cost) {
                             println!("Player {} cannot afford development. It costs {} and they have {}.", c_player, cost, players[c_player].money);
@@ -292,6 +310,20 @@ fn main() {
                         println!(
                             "Player {} upgrades guild to level {}. They have {} left.",
                             c_player, players[c_player].develop_level, players[c_player].money
+                        );
+                    }
+                    // Training the player's attack
+                    TurnTask::Train => {
+                        let cost = calc_training(&players[c_player]);
+                        if !can_afford(players[c_player].money, cost) {
+                            println!("Player {} cannot afford training. It costs {} and they have {}.", c_player, cost, players[c_player].money);
+                            continue;
+                        }
+                        players[c_player].money -= cost;
+                        players[c_player].combat_level += 1;
+                        println!(
+                            "Player {} trains guild to level {}. They have {} left.",
+                            c_player, players[c_player].combat_level, players[c_player].money
                         );
                     }
                     // Attack another player
