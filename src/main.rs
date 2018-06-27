@@ -58,11 +58,12 @@ struct Player {
     disposition: Career,
     combat_level: i32,
     turn_func: fn(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction>,
-    ai_type: AIType
+    ai_type: AIType,
+    relationships: Vec<i32>
 }
 
 // Generates a random player
-fn GeneratePlayer(ai_type: AIType) -> Player {
+fn generate_player(ai_type: AIType) -> Player {
     let career = match rand::thread_rng().gen_range(0_i32, 3_i32) {
         0 => Career::Politician,
         1 => Career::Soldier,
@@ -81,7 +82,8 @@ fn GeneratePlayer(ai_type: AIType) -> Player {
             AIType::Player => do_player,
             _ => do_ai_basic
         },
-        ai_type: ai_type
+        ai_type: ai_type,
+        relationships: Vec::new()
     };
 
     player
@@ -138,7 +140,7 @@ fn calc_training(player: &Player) -> i32 {
 // Player Function
 // Player controls this person
 fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
-    let mut taskBuf = VecDeque::new();
+    let mut task_buf = VecDeque::new();
 
     // Print menu
     println!("");
@@ -155,24 +157,24 @@ fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
     println!("7 - Stats");
 
     // Queue up actions
-    while taskBuf.len() < ACTIONS_PER_TURN {
+    while task_buf.len() < ACTIONS_PER_TURN {
         // Get input
-        println!("Action {} / {}", taskBuf.len() + 1_usize, ACTIONS_PER_TURN);
+        println!("Action {} / {}", task_buf.len() + 1_usize, ACTIONS_PER_TURN);
         let mut input = String::new();
-        io::stdin().read_line(&mut input);
+        let _ = io::stdin().read_line(&mut input);
 
         // Process input
         match input.trim() {
-            "1" => taskBuf.push_front(TurnAction {
+            "1" => task_buf.push_front(TurnAction {
                 turn_task: TurnTask::Work,
                 target: 0,
             }),
             "2" => {
-                /*if action_exists(TurnTask::Develop, &taskBuf) {
+                /*if action_exists(TurnTask::Develop, &task_buf) {
                     println!("Cannot develop more than once per turn!");
                     continue;
                 }*/
-                taskBuf.push_front(TurnAction {
+                task_buf.push_front(TurnAction {
                     turn_task: TurnTask::Develop,
                     target: 0,
                 });
@@ -197,13 +199,13 @@ fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
                     println!("Target player ID is out of bounds!");
                     continue;
                 }
-                taskBuf.push_front(TurnAction {
+                task_buf.push_front(TurnAction {
                     turn_task: TurnTask::Attack,
                     target: ctarget as usize,
                 });
             }
             "5" => {
-                taskBuf.push_front(TurnAction {
+                task_buf.push_front(TurnAction {
                     turn_task: TurnTask::Train,
                     target: 0,
                 });
@@ -231,21 +233,21 @@ fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
         }
     }
 
-    taskBuf
+    task_buf
 }
 
 // AI Function
 // This AI is stupid and works all day
 // Selects actions for that player's turn
 fn do_ai_basic(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
-    let mut taskBuf = VecDeque::new();
-    while taskBuf.len() < ACTIONS_PER_TURN {
-        taskBuf.push_back(TurnAction {
+    let mut task_buf = VecDeque::new();
+    while task_buf.len() < ACTIONS_PER_TURN {
+        task_buf.push_back(TurnAction {
             turn_task: TurnTask::Work,
             target: 0,
         });
     }
-    taskBuf
+    task_buf
 }
 
 // Entry point
@@ -253,14 +255,20 @@ fn main() {
     let mut players = Vec::new();
     let mut is_running = true;
 
-    players.push(GeneratePlayer(AIType::Player));
-    players.push(GeneratePlayer(AIType::BasicWorkAI));
-    players.push(GeneratePlayer(AIType::BasicWorkAI));
-    players.push(GeneratePlayer(AIType::BasicWorkAI));
-    players.push(GeneratePlayer(AIType::BasicWorkAI));
-    players.push(GeneratePlayer(AIType::BasicWorkAI));
-    players.push(GeneratePlayer(AIType::BasicWorkAI));
-    players.push(GeneratePlayer(AIType::BasicWorkAI));
+    players.push(generate_player(AIType::Player));
+    players.push(generate_player(AIType::BasicWorkAI));
+    players.push(generate_player(AIType::BasicWorkAI));
+    players.push(generate_player(AIType::BasicWorkAI));
+    players.push(generate_player(AIType::BasicWorkAI));
+    players.push(generate_player(AIType::BasicWorkAI));
+    players.push(generate_player(AIType::BasicWorkAI));
+    players.push(generate_player(AIType::BasicWorkAI));
+
+    for i in 0..players.len() {
+        for _ in 0..players.len() {
+            players[i].relationships.push(20_i32 + rand::thread_rng().gen_range(0_i32, 60_i32));
+        }
+    }
 
     println!("");
     println!("Guild Sim");
@@ -268,10 +276,10 @@ fn main() {
     println!("");
 
     while is_running {
-        let mut taskBuf : VecDeque<TurnAction> = VecDeque::new();
+        let mut task_buf : VecDeque<TurnAction> = VecDeque::new();
         println!("Press enter to begin next turn");
         let mut input = String::new();
-        io::stdin().read_line(&mut input);
+        let _ = io::stdin().read_line(&mut input);
 
         // Process actions
         for c_player in 0..players.len() {
@@ -281,11 +289,11 @@ fn main() {
             }
 
             // Run AI or player turn task to get actions
-            let mut taskBuf = (players[c_player].turn_func)(c_player, &players);
+            let mut task_buf = (players[c_player].turn_func)(c_player, &players);
 
             // Process each action for this player
-            while !taskBuf.is_empty() {
-                let elem = taskBuf.pop_back().unwrap();
+            while !task_buf.is_empty() {
+                let elem = task_buf.pop_back().unwrap();
                 match elem.turn_task {
                     // Working is the simpliest task
                     TurnTask::Work => {
@@ -296,7 +304,7 @@ fn main() {
                     }
                     // Develops the guild the player owns
                     TurnTask::Develop => {
-                        /*if action_exists(TurnTask::Develop, &taskBuf) {
+                        /*if action_exists(TurnTask::Develop, &task_buf) {
                             println!("Player {} cannot develop more than once per turn!", c_player);
                             continue;
                         }*/
