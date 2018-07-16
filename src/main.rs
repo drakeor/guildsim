@@ -12,6 +12,8 @@ const BASE_DEVELOPMENT_INCREMENT: f32 = 1.5;
 const BASE_ATTACK: i32 = 3;
 const BASE_TRAINING_COST: i32 = 25;
 const BASE_TRAINING_INCREMENT: f32 = 1.1;
+const BASE_ENTERTAIN_COST: i32 = 100;
+const BASE_ENTERTAIN_FAVOR_INCREASE: i32 = 2;
 
 // Careers a player can have
 #[derive(Debug)]
@@ -137,6 +139,11 @@ fn calc_training(player: &Player) -> i32 {
     (BASE_TRAINING_COST as f32 * BASE_TRAINING_INCREMENT.powi(player.combat_level)) as i32
 }
 
+// Calculate socialize cost
+fn calc_socialize(player: &Player) -> i32 {
+    BASE_ENTERTAIN_COST
+}
+
 // Player Function
 // Player controls this person
 fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
@@ -150,7 +157,7 @@ fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
         "2 - Develop Guild (-${}, +Development)",
         calc_develop(&players[c_player])
     );
-    println!("3 - Socialize with Player");
+    println!("3 - Socialize with Player (-${})", calc_socialize(&players[c_player]));
     println!("4 - Attack Player ({} damage)", calc_attack(&players[c_player]));
     println!("5 - Train (-${}, +Attack)", calc_training(&players[c_player]));
     println!("6 - Run for Office");
@@ -177,6 +184,27 @@ fn do_player(c_player: usize, players: &Vec<Player>) -> VecDeque<TurnAction> {
                 task_buf.push_front(TurnAction {
                     turn_task: TurnTask::Develop,
                     target: 0,
+                });
+            },
+            "3" => {
+                println!("Type in which player to socialize with");
+                let mut input_text = String::new();
+                io::stdin()
+                    .read_line(&mut input_text)
+                    .expect("failed to read from stdin");
+
+                let trimmed = input_text.trim();
+                let ctarget = match trimmed.parse::<i32>() {
+                    Ok(i) => i,
+                    Err(..) => -1,
+                };
+                if ctarget < 0 || ctarget > players.len() as i32 {
+                    println!("Target player ID is out of bounds!");
+                    continue;
+                }
+                task_buf.push_front(TurnAction {
+                    turn_task: TurnTask::Socialize,
+                    target: ctarget as usize,
                 });
             },
             "4" => {
